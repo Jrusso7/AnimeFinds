@@ -57,7 +57,13 @@
     .tab.active{background:#191d23; color:var(--text)}
 
     .row{display:flex; gap:10px; flex-wrap:wrap}
-    input[type="search"], input[type="text"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+    input[type=\"search\"], input[type=\"text\"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+    /* Autocomplete */
+    .ac-wrap{position:relative; flex:1 1 220px; min-width:200px}
+    .ac-list{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#0f1318; border:1px solid #222932; border-radius:12px; box-shadow:var(--shadow); max-height:320px; overflow:auto; padding:6px; z-index:100}
+    .ac-item{padding:.6rem .75rem; border-radius:10px; cursor:pointer}
+    .ac-item[aria-selected=\"true\"], .ac-item:hover{background:#191d23}
+    .ac-empty{padding:.6rem .75rem; color:var(--muted)}
     .pill{display:flex; gap:8px; flex-wrap:wrap}
 
     /* Results */
@@ -135,10 +141,12 @@
       <!-- By Title Panel -->
       <div id="panel-title" role="tabpanel" aria-labelledby="tab-title">
         <div class="row" style="margin-bottom:10px">
-          <input id="like-input" type="search" placeholder="Enter an anime you like (e.g., 'Violet Evergarden')" aria-label="Enter an anime you like" autocomplete="off" />
+          <div class="ac-wrap">
+            <input id="like-input" type="search" placeholder="Enter an anime you like (e.g., 'Violet Evergarden')" aria-label="Enter an anime you like" autocomplete="off" aria-controls="ac-list" aria-autocomplete="list" aria-expanded="false" aria-haspopup="listbox" />
+            <div id="ac-list" class="ac-list" role="listbox" hidden></div>
+          </div>
           <button class="btn" id="byTitleBtn">Find Similar</button>
         </div>
-        <div class="pill" id="title-hints" aria-live="polite" style="font-size:.9rem; color:var(--muted)"></div>
       </div>
 
       <!-- By Filters Panel -->
@@ -217,7 +225,9 @@
     }
 
     const likeInput   = document.getElementById('like-input');
-    const titleHints  = document.getElementById('title-hints');
+    const acList      = document.getElementById('ac-list');
+    let acData = [];
+    let acIndex = -1; // keyboard highlight index
     const byTitleBtn  = document.getElementById('byTitleBtn');
     const byFiltersBtn= document.getElementById('byFiltersBtn');
     const resultsSection = document.getElementById('results-section');
@@ -423,8 +433,9 @@
     // -------- Typeahead suggestions (AniList) --------
     const QUERY_HINTS = `
       query ($search: String) {
-        Page(perPage: 5) {
+        Page(perPage: 8) {
           media(type: ANIME, search: $search, sort: POPULARITY_DESC) {
+            id
             title { romaji english native }
           }
         }
@@ -435,14 +446,29 @@
     likeInput?.addEventListener('input', () => {
       clearTimeout(hintTimer);
       const q = likeInput.value.trim();
-      if(!q){ titleHints.textContent=''; return; }
-      hintTimer = setTimeout(async () => {
-        try{
-          const data = await gql(QUERY_HINTS, { search: q });
-          const titles = (data?.Page?.media || []).map(m => pickTitle(m.title));
-          titleHints.textContent = titles.length ? 'Suggestions: ' + titles.join(' • ') : '';
-        }catch{ /* ignore */ }
-      }, 250);
+      if(q.length < 2){ hideSuggestions(); return; }
+      hintTimer = setTimeout(() => fetchHints(q), 200);
+    });
+
+    likeInput?.addEventListener('keydown', (e) => {
+      if(acList.hidden) return;
+      const options = Array.from(acList.querySelectorAll('.ac-item'));
+      if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        if(options.length){ acIndex = (acIndex + 1) % options.length; setActive(acIndex); }
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        if(options.length){ acIndex = (acIndex - 1 + options.length) % options.length; setActive(acIndex); }
+      } else if(e.key === 'Enter'){
+        if(acIndex >= 0 && options[acIndex]){
+          e.preventDefault();
+          likeInput.value = options[acIndex].dataset.title;
+          hideSuggestions();
+          byTitleBtn?.click();
+        }
+      } else if(e.key === 'Escape'){
+        hideSuggestions();
+      }
     });
   });
   </script>
