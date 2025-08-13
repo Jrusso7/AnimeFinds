@@ -287,24 +287,6 @@
       });
       clearBtn.hidden = false;
     }
-      resultsSection.hidden = false;
-      results.innerHTML = '';
-      resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
-      items.forEach(item => {
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="thumb">
-            <img src="${item.image}" alt="${item.title} poster" />
-            <span class="badge">${item.genre || ''}</span>
-          </div>
-          <div class="content">
-            <h3 class="title">${item.title}</h3>
-            <div class="meta">${item.meta || ''}</div>
-          </div>`;
-        results.appendChild(card);
-      });
-    }
 
     function startLoading(){ resultsSection.hidden = true; }
 
