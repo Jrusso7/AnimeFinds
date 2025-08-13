@@ -24,9 +24,7 @@
     html,body{height:100%}
     body{
       margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial; color:var(--text); line-height:1.55;
-      /* Solid fallback */
       background-color: var(--bg);
-      /* Decorative layers */
       background-image: radial-gradient(1200px 600px at 85% -10%, rgba(110,231,255,.08), transparent),
                         radial-gradient(900px 500px at 10% 0%, rgba(255,86,120,.08), transparent);
     }
@@ -57,21 +55,18 @@
     .tab.active{background:#191d23; color:var(--text)}
 
     .row{display:flex; gap:10px; flex-wrap:wrap}
-    input[type=\"search\"], input[type=\"text\"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+    input[type="search"], input[type="text"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+
     /* Autocomplete */
     .ac-wrap{position:relative; flex:1 1 220px; min-width:200px}
     .ac-list{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#0f1318; border:1px solid #222932; border-radius:12px; box-shadow:var(--shadow); max-height:320px; overflow:auto; padding:6px; z-index:100}
     .ac-item{padding:.6rem .75rem; border-radius:10px; cursor:pointer}
-    .ac-item[aria-selected=\"true\"], .ac-item:hover{background:#191d23}
+    .ac-item[aria-selected="true"], .ac-item:hover{background:#191d23}
     .ac-empty{padding:.6rem .75rem; color:var(--muted)}
-    .pill{display:flex; gap:8px; flex-wrap:wrap}
 
     /* Results */
     section{padding:28px 0}
-    /* Extra breathing room below results before footer */
     #results-section{padding-bottom:72px}
-    .section-title{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
-    .section-title h2{font-size:1.25rem; margin:0}
 
     .grid{display:grid; grid-template-columns:repeat(12, 1fr); gap:16px}
     .card{grid-column:span 12; background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)}
@@ -83,10 +78,6 @@
     .content{padding:12px 14px}
     .title{font-weight:700; margin:0 0 6px}
     .meta{color:var(--muted); font-size:.9rem}
-
-    .empty{display:grid; place-items:center; color:var(--muted); border:1px dashed rgba(255,255,255,.15); border-radius:16px; padding:26px}
-    .loader{width:32px; height:32px; border:3px solid rgba(255,255,255,.1); border-top-color:var(--brand); border-radius:50%; animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
 
     /* Footer minimal */
     footer{padding:32px 0 48px; color:#98a3ad; border-top:1px solid rgba(255,255,255,.06)}
@@ -182,7 +173,7 @@
     </div>
   </section>
 
-  <!-- Results -->
+  <!-- Results (hidden until we have data) -->
   <section class="container" id="results-section" aria-labelledby="results-title" hidden>
     <div class="section-title">
       <h2 id="results-title">Results</h2>
@@ -220,8 +211,6 @@
       }
       tabTitle.addEventListener('click', () => activate('title'));
       tabFilters.addEventListener('click', () => activate('filters'));
-    } else {
-      console.warn('Tabs UI not found — check IDs: tab-title, tab-filters, panel-title, panel-filters.');
     }
 
     const likeInput   = document.getElementById('like-input');
@@ -267,7 +256,6 @@
     // Render cards
     function renderResults(items){
       if(!items || !items.length){
-        // Hide the entire results section until we have something to show
         results.innerHTML = '';
         resultCount.textContent = '';
         resultsSection.hidden = true;
@@ -291,27 +279,8 @@
         results.appendChild(card);
       });
     }
-      resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
-      items.forEach(item => {
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="thumb">
-            <img src="${item.image}" alt="${item.title} poster" />
-            <span class="badge">${item.genre || ''}</span>
-          </div>
-          <div class="content">
-            <h3 class="title">${item.title}</h3>
-            <div class="meta">${item.meta || ''}</div>
-          </div>`;
-        results.appendChild(card);
-      });
-    }
 
-    function startLoading(text){
-      // Hide results while fetching; show nothing until results are ready
-      resultsSection.hidden = true;
-    }
+    function startLoading(){ resultsSection.hidden = true; }
 
     // -------- Title → Similar recommendations --------
     const QUERY_SIMILAR = `
@@ -402,12 +371,11 @@
       const like = (likeInput?.value || '').trim();
       if(!like){ likeInput?.focus(); return; }
       try{
-        resultsSection.hidden = true;
+        startLoading();
         const items = await fetchSimilarByTitle(like);
         renderResults(items);
       }catch(err){
         console.error(err);
-        resultCount.textContent = '';
         resultsSection.hidden = true;
       }
     });
@@ -420,17 +388,16 @@
         mood: document.getElementById('mood')?.value,
       };
       try{
-        resultsSection.hidden = true;
+        startLoading();
         const items = await fetchByFilters(filters);
         renderResults(items);
       }catch(err){
         console.error(err);
-        resultCount.textContent = '';
         resultsSection.hidden = true;
       }
     });
 
-    // -------- Typeahead suggestions (AniList) --------
+    // -------- Autocomplete (AniList) --------
     const QUERY_HINTS = `
       query ($search: String) {
         Page(perPage: 8) {
@@ -441,6 +408,58 @@
         }
       }
     `;
+
+    function hideSuggestions(){
+      acList.innerHTML = '';
+      acList.hidden = true;
+      likeInput.setAttribute('aria-expanded','false');
+      likeInput.removeAttribute('aria-activedescendant');
+      acIndex = -1;
+      acData = [];
+    }
+
+    function showSuggestions(items){
+      acList.innerHTML = '';
+      if(!items || !items.length){
+        const empty = document.createElement('div');
+        empty.className = 'ac-empty';
+        empty.textContent = 'No matches';
+        acList.appendChild(empty);
+      } else {
+        items.forEach((m) => {
+          const opt = document.createElement('div');
+          opt.className = 'ac-item';
+          opt.id = `ac-item-${m.id}`;
+          opt.setAttribute('role','option');
+          opt.setAttribute('aria-selected','false');
+          opt.dataset.title = m.title;
+          opt.textContent = m.title;
+          acList.appendChild(opt);
+        });
+      }
+      acList.hidden = false;
+      likeInput.setAttribute('aria-expanded','true');
+      acIndex = -1;
+    }
+
+    function setActive(index){
+      const options = Array.from(acList.querySelectorAll('.ac-item'));
+      options.forEach((el, i) => el.setAttribute('aria-selected', i === index ? 'true' : 'false'));
+      const active = options[index];
+      if(active){
+        likeInput.setAttribute('aria-activedescendant', active.id);
+        active.scrollIntoView({ block:'nearest' });
+      }
+    }
+
+    async function fetchHints(q){
+      try{
+        const data = await gql(QUERY_HINTS, { search: q });
+        const media = (data?.Page?.media || []).map(m => ({ id: m.id, title: (m.title.english||m.title.romaji||m.title.native) }));
+        acData = media;
+        showSuggestions(media);
+      }catch(e){ hideSuggestions(); }
+    }
 
     let hintTimer;
     likeInput?.addEventListener('input', () => {
@@ -467,6 +486,20 @@
           byTitleBtn?.click();
         }
       } else if(e.key === 'Escape'){
+        hideSuggestions();
+      }
+    });
+
+    acList?.addEventListener('mousedown', (e) => {
+      const item = e.target.closest('.ac-item');
+      if(!item) return;
+      likeInput.value = item.dataset.title;
+      hideSuggestions();
+      byTitleBtn?.click();
+    });
+
+    document.addEventListener('click', (e) => {
+      if(!acList.hidden && !acList.contains(e.target) && e.target !== likeInput){
         hideSuggestions();
       }
     });
