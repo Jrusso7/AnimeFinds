@@ -62,6 +62,8 @@
 
     /* Results */
     section{padding:28px 0}
+    /* Extra breathing room below results before footer */
+    #results-section{padding-bottom:72px}
     .section-title{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
     .section-title h2{font-size:1.25rem; margin:0}
 
@@ -173,19 +175,12 @@
   </section>
 
   <!-- Results -->
-  <section class="container" aria-labelledby="results-title">
+  <section class="container" id="results-section" aria-labelledby="results-title" hidden>
     <div class="section-title">
       <h2 id="results-title">Results</h2>
       <div id="result-count" class="meta"></div>
     </div>
-    <div id="results" class="grid">
-      <div class="empty" id="empty-state">
-        <div style="display:grid; place-items:center; gap:10px">
-          <div class="loader" aria-hidden="true" style="display:none" id="loader"></div>
-          <div id="empty-text">Try entering a title you like or adjust the filters to see recommendations.</div>
-        </div>
-      </div>
-    </div>
+    <div id="results" class="grid"></div>
   </section>
 
   <footer class="container" id="about">
@@ -225,10 +220,8 @@
     const titleHints  = document.getElementById('title-hints');
     const byTitleBtn  = document.getElementById('byTitleBtn');
     const byFiltersBtn= document.getElementById('byFiltersBtn');
+    const resultsSection = document.getElementById('results-section');
     const results     = document.getElementById('results');
-    const emptyState  = document.getElementById('empty-state');
-    const emptyText   = document.getElementById('empty-text');
-    const loader      = document.getElementById('loader');
     const resultCount = document.getElementById('result-count');
 
     // -------- AniList GraphQL helpers --------
@@ -263,15 +256,31 @@
 
     // Render cards
     function renderResults(items){
-      results.innerHTML = '';
       if(!items || !items.length){
-        results.appendChild(emptyState);
-        emptyState.style.display = 'grid';
-        loader.style.display = 'none';
-        emptyText.textContent = 'No matches yet. Try another title or widen your filters.';
+        // Hide the entire results section until we have something to show
+        results.innerHTML = '';
         resultCount.textContent = '';
+        resultsSection.hidden = true;
         return;
       }
+      resultsSection.hidden = false;
+      results.innerHTML = '';
+      resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
+      items.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">
+            <img src="${item.image}" alt="${item.title} poster" />
+            <span class="badge">${item.genre || ''}</span>
+          </div>
+          <div class="content">
+            <h3 class="title">${item.title}</h3>
+            <div class="meta">${item.meta || ''}</div>
+          </div>`;
+        results.appendChild(card);
+      });
+    }
       resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
       items.forEach(item => {
         const card = document.createElement('article');
@@ -290,11 +299,8 @@
     }
 
     function startLoading(text){
-      emptyState.style.display='grid';
-      loader.style.display='block';
-      emptyText.textContent=text;
-      results.innerHTML = '';
-      results.appendChild(emptyState);
+      // Hide results while fetching; show nothing until results are ready
+      resultsSection.hidden = true;
     }
 
     // -------- Title → Similar recommendations --------
@@ -386,13 +392,13 @@
       const like = (likeInput?.value || '').trim();
       if(!like){ likeInput?.focus(); return; }
       try{
-        startLoading('Finding similar titles…');
+        resultsSection.hidden = true;
         const items = await fetchSimilarByTitle(like);
         renderResults(items);
       }catch(err){
         console.error(err);
-        emptyText.textContent = 'Whoops, something went wrong fetching recommendations.';
-        loader.style.display='none';
+        resultCount.textContent = '';
+        resultsSection.hidden = true;
       }
     });
 
@@ -404,13 +410,13 @@
         mood: document.getElementById('mood')?.value,
       };
       try{
-        startLoading('Applying filters…');
+        resultsSection.hidden = true;
         const items = await fetchByFilters(filters);
         renderResults(items);
       }catch(err){
         console.error(err);
-        emptyText.textContent = 'Could not load filtered results. Try adjusting filters.';
-        loader.style.display='none';
+        resultCount.textContent = '';
+        resultsSection.hidden = true;
       }
     });
 
