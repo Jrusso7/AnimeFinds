@@ -55,10 +55,12 @@
     .tab.active{background:#191d23; color:var(--text)}
 
     .row{display:flex; gap:10px; flex-wrap:wrap}
-    input[type="search"], input[type="text"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+    input[type=\"search\"], input[type=\"text\"], select{$1}
+    /* Ensure search input stretches nicely */
+    .ac-wrap > input{width:100%}
 
     /* Autocomplete */
-    .ac-wrap{position:relative; flex:1 1 220px; min-width:200px}
+    .ac-wrap{position:relative; flex:1 1 560px; min-width:320px}
     .ac-list{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#0f1318; border:1px solid #222932; border-radius:12px; box-shadow:var(--shadow); max-height:320px; overflow:auto; padding:6px; z-index:100}
     .ac-item{padding:.6rem .75rem; border-radius:10px; cursor:pointer}
     .ac-item[aria-selected="true"], .ac-item:hover{background:#191d23}
@@ -175,15 +177,18 @@
 
   <!-- Results (hidden until we have data) -->
   <section class="container" id="results-section" aria-labelledby="results-title" hidden>
-    <div class="section-title">
-      <h2 id="results-title">Results</h2>
-      <div id="result-count" class="meta"></div>
+    <div class=\"section-title\">
+      <h2 id=\"results-title\">Results</h2>
+      <div style=\"display:flex; align-items:center; gap:10px\">
+        <div id=\"result-count\" class=\"meta\"></div>
+        <button class=\"btn secondary\" id=\"clearBtn\" hidden>Clear</button>
+      </div>
     </div>
     <div id="results" class="grid"></div>
   </section>
 
   <footer class="container" id="about">
-    <div class="brand" style="margin-bottom:8px;margin-top:20px;">
+    <div class="brand" style="margin-bottom:8px">
       <span class="brand-badge" aria-hidden="true">AF</span>
       <strong>AnimeFinds</strong>
     </div>
@@ -222,6 +227,7 @@
     const resultsSection = document.getElementById('results-section');
     const results     = document.getElementById('results');
     const resultCount = document.getElementById('result-count');
+    const clearBtn    = document.getElementById('clearBtn');
 
     // -------- AniList GraphQL helpers --------
     const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
@@ -259,8 +265,28 @@
         results.innerHTML = '';
         resultCount.textContent = '';
         resultsSection.hidden = true;
+        clearBtn.hidden = true;
         return;
       }
+      resultsSection.hidden = false;
+      results.innerHTML = '';
+      resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
+      items.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">
+            <img src="${item.image}" alt="${item.title} poster" />
+            <span class="badge">${item.genre || ''}</span>
+          </div>
+          <div class="content">
+            <h3 class="title">${item.title}</h3>
+            <div class="meta">${item.meta || ''}</div>
+          </div>`;
+        results.appendChild(card);
+      });
+      clearBtn.hidden = false;
+    }
       resultsSection.hidden = false;
       results.innerHTML = '';
       resultCount.textContent = `${items.length} result${items.length>1?'s':''}`;
@@ -389,6 +415,25 @@
       };
       try{
         startLoading();
+        const items = await fetchByFilters(filters);
+        renderResults(items);
+      }catch(err){
+        console.error(err);
+        resultsSection.hidden = true;
+        clearBtn.hidden = true;
+      }
+    });
+
+    // Clear results button
+    clearBtn?.addEventListener('click', () => {
+      results.innerHTML = '';
+      resultCount.textContent = '';
+      resultsSection.hidden = true;
+      clearBtn.hidden = true;
+      // Optional: clear inputs
+      // likeInput.value = '';
+      // hideSuggestions();
+    });
         const items = await fetchByFilters(filters);
         renderResults(items);
       }catch(err){
