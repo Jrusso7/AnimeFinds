@@ -55,12 +55,11 @@
     .tab.active{background:#191d23; color:var(--text)}
 
     .row{display:flex; gap:10px; flex-wrap:wrap}
-    input[type=\"search\"], input[type=\"text\"], select{$1}
-    /* Ensure search input stretches nicely */
-    .ac-wrap > input{width:100%}
+    input[type="search"], input[type="text"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
 
     /* Autocomplete */
     .ac-wrap{position:relative; flex:1 1 560px; min-width:320px}
+    .ac-wrap > input{width:100%}
     .ac-list{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#0f1318; border:1px solid #222932; border-radius:12px; box-shadow:var(--shadow); max-height:320px; overflow:auto; padding:6px; z-index:100}
     .ac-item{padding:.6rem .75rem; border-radius:10px; cursor:pointer}
     .ac-item[aria-selected="true"], .ac-item:hover{background:#191d23}
@@ -177,11 +176,11 @@
 
   <!-- Results (hidden until we have data) -->
   <section class="container" id="results-section" aria-labelledby="results-title" hidden>
-    <div class=\"section-title\">
-      <h2 id=\"results-title\">Results</h2>
-      <div style=\"display:flex; align-items:center; gap:10px\">
-        <div id=\"result-count\" class=\"meta\"></div>
-        <button class=\"btn secondary\" id=\"clearBtn\" hidden>Clear</button>
+    <div class="section-title">
+      <h2 id="results-title">Results</h2>
+      <div style="display:flex; align-items:center; gap:10px">
+        <div id="result-count" class="meta"></div>
+        <button class="btn secondary" id="clearBtn" hidden>Clear</button>
       </div>
     </div>
     <div id="results" class="grid"></div>
@@ -402,26 +401,18 @@
       }catch(err){
         console.error(err);
         resultsSection.hidden = true;
-        clearBtn.hidden = true;
       }
     });
 
-    // Clear results button
+    // Clear results button (no await here)
     clearBtn?.addEventListener('click', () => {
       results.innerHTML = '';
       resultCount.textContent = '';
       resultsSection.hidden = true;
       clearBtn.hidden = true;
-      // Optional: clear inputs
+      // Optionally clear inputs:
       // likeInput.value = '';
       // hideSuggestions();
-    });
-        const items = await fetchByFilters(filters);
-        renderResults(items);
-      }catch(err){
-        console.error(err);
-        resultsSection.hidden = true;
-      }
     });
 
     // -------- Autocomplete (AniList) --------
@@ -469,6 +460,15 @@
       acIndex = -1;
     }
 
+    async function fetchHints(q){
+      try{
+        const data = await gql(QUERY_HINTS, { search: q });
+        const media = (data?.Page?.media || []).map(m => ({ id: m.id, title: (m.title.english||m.title.romaji||m.title.native) }));
+        acData = media;
+        showSuggestions(media);
+      }catch(e){ hideSuggestions(); }
+    }
+
     function setActive(index){
       const options = Array.from(acList.querySelectorAll('.ac-item'));
       options.forEach((el, i) => el.setAttribute('aria-selected', i === index ? 'true' : 'false'));
@@ -477,15 +477,6 @@
         likeInput.setAttribute('aria-activedescendant', active.id);
         active.scrollIntoView({ block:'nearest' });
       }
-    }
-
-    async function fetchHints(q){
-      try{
-        const data = await gql(QUERY_HINTS, { search: q });
-        const media = (data?.Page?.media || []).map(m => ({ id: m.id, title: (m.title.english||m.title.romaji||m.title.native) }));
-        acData = media;
-        showSuggestions(media);
-      }catch(e){ hideSuggestions(); }
     }
 
     let hintTimer;
