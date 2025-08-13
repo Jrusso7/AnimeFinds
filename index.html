@@ -5,39 +5,230 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AnimeFinds — Find Your Next Favorite Anime — Fast AF</title>
   <meta name="description" content="Discover new anime with AnimeFinds. Get smart recommendations by title or filter by genre, year, length, and mood." />
-  <style>/* styles unchanged from current */</style>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23ff4d6d'/%3E%3Ctext x='50' y='58' text-anchor='middle' font-size='52' font-family='Arial' fill='white'%3EAF%3C/text%3E%3C/svg%3E" />
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="AnimeFinds — Find Your Next Favorite Anime — Fast AF" />
+  <meta property="og:description" content="Recommendations by title or via filters. Discover your next watch fast." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.animefinds.com/" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <style>
+    :root{
+      --bg:#0b0d10; --card:#12151a; --muted:#a6b1bb; --text:#e9eef5;
+      --brand:#ff5678; --brand-2:#6ee7ff; --ring:rgba(255,86,120,.35);
+      --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial; color:var(--text); line-height:1.55;
+      /* Solid fallback */
+      background-color: var(--bg);
+      /* Decorative layers */
+      background-image: radial-gradient(1200px 600px at 85% -10%, rgba(110,231,255,.08), transparent),
+                        radial-gradient(900px 500px at 10% 0%, rgba(255,86,120,.08), transparent);
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1100px; margin:0 auto; padding:0 20px}
+    .btn{display:inline-flex; align-items:center; gap:.6rem; padding:.85rem 1.1rem; border-radius:14px; background:linear-gradient(135deg,var(--brand),#ff7a99); color:#fff; font-weight:700; border:none; cursor:pointer; box-shadow:var(--shadow)}
+    .btn.secondary{background:transparent; border:1px solid #2a2f36}
+    .btn:focus{outline:2px solid var(--ring); outline-offset:2px}
+
+    header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(130%) blur(8px);
+      background:rgba(11,13,16,.7); border-bottom:1px solid rgba(255,255,255,.05)}
+    .nav{display:flex; align-items:center; justify-content:space-between; padding:12px 0}
+    .brand{display:flex; align-items:center; gap:.6rem; font-weight:800; letter-spacing:.3px}
+    .brand-badge{display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, var(--brand), var(--brand-2)); color:#0b0d10; font-weight:900}
+    .navlinks{display:flex; gap:1rem; color:var(--muted)}
+    .navlinks a{padding:.6rem .7rem; border-radius:12px}
+    .navlinks a:hover{background:#191d23; color:var(--text)}
+
+    .hero{padding:86px 0 28px; text-align:center}
+    .eyebrow{color:var(--brand-2); font-weight:700; letter-spacing:.12em; text-transform:uppercase; font-size:.8rem}
+    h1{margin:.4rem 0 1rem; font-size:clamp(2rem,4vw + 1rem,3.25rem)}
+    .lead{max-width:840px; margin:0 auto 28px; color:var(--muted); font-size:1.05rem}
+
+    /* Core Search Surface */
+    .surface{margin:0 auto; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}
+    .tabs{display:flex; gap:6px; background:#0f1318; border:1px solid #222932; border-radius:12px; padding:6px; width:fit-content; margin:0 auto 14px}
+    .tab{border:none; background:transparent; color:var(--muted); padding:.6rem .9rem; border-radius:10px; cursor:pointer; font-weight:700}
+    .tab.active{background:#191d23; color:var(--text)}
+
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    input[type="search"], input[type="text"], select{flex:1 1 220px; min-width:200px; background:#0f1318; color:var(--text); border:1px solid #222932; border-radius:12px; padding:.9rem 1rem}
+    .pill{display:flex; gap:8px; flex-wrap:wrap}
+
+    /* Results */
+    section{padding:28px 0}
+    .section-title{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
+    .section-title h2{font-size:1.25rem; margin:0}
+
+    .grid{display:grid; grid-template-columns:repeat(12, 1fr); gap:16px}
+    .card{grid-column:span 12; background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)}
+    @media (min-width:640px){ .card{grid-column:span 6} }
+    @media (min-width:900px){ .card{grid-column:span 3} }
+    .thumb{position:relative; aspect-ratio:16/9; background:#0e1116; display:grid; place-items:center}
+    .thumb img{width:100%; height:100%; object-fit:cover}
+    .badge{position:absolute; top:10px; left:10px; background:rgba(11,13,16,.75); border:1px solid rgba(255,255,255,.15); padding:.25rem .5rem; border-radius:999px; font-size:.75rem}
+    .content{padding:12px 14px}
+    .title{font-weight:700; margin:0 0 6px}
+    .meta{color:var(--muted); font-size:.9rem}
+
+    .empty{display:grid; place-items:center; color:var(--muted); border:1px dashed rgba(255,255,255,.15); border-radius:16px; padding:26px}
+    .loader{width:32px; height:32px; border:3px solid rgba(255,255,255,.1); border-top-color:var(--brand); border-radius:50%; animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Footer minimal */
+    footer{padding:32px 0 48px; color:#98a3ad; border-top:1px solid rgba(255,255,255,.06)}
+  </style>
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AnimeFinds",
+    "url": "https://www.animefinds.com/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.animefinds.com/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 <body>
-  <!-- header, hero, and input UI unchanged from current -->
+  <!-- Header / Nav -->
+  <header>
+    <div class="container nav" aria-label="Primary">
+      <a class="brand" href="#" aria-label="AnimeFinds Home">
+        <span class="brand-badge" aria-hidden="true">AF</span>
+        <span>AnimeFinds</span>
+      </a>
+      <nav class="navlinks" aria-label="Site">
+        <a href="#engine">Recommendations</a>
+        <a href="#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero container" id="hero">
+    <div class="eyebrow">Anime recommendations</div>
+    <h1>Find Your Next Favorite Anime — Fast AF</h1>
+    <p class="lead">Tell us a title you love or tune the filters — we'll surface smart recommendations instantly.</p>
+
+    <!-- Core surface: Tabs + Inputs -->
+    <div class="surface container" id="engine">
+      <div class="tabs" role="tablist" aria-label="Recommendation modes">
+        <button class="tab active" id="tab-title" role="tab" aria-selected="true" aria-controls="panel-title">By Title</button>
+        <button class="tab" id="tab-filters" role="tab" aria-selected="false" aria-controls="panel-filters">By Filters</button>
+      </div>
+
+      <!-- By Title Panel -->
+      <div id="panel-title" role="tabpanel" aria-labelledby="tab-title">
+        <div class="row" style="margin-bottom:10px">
+          <input id="like-input" type="search" placeholder="Enter an anime you like (e.g., 'Violet Evergarden')" aria-label="Enter an anime you like" autocomplete="off" />
+          <button class="btn" id="byTitleBtn">Find Similar</button>
+        </div>
+        <div class="pill" id="title-hints" aria-live="polite" style="font-size:.9rem; color:var(--muted)"></div>
+      </div>
+
+      <!-- By Filters Panel -->
+      <div id="panel-filters" role="tabpanel" aria-labelledby="tab-filters" hidden>
+        <div class="row" style="margin-bottom:10px">
+          <select id="genre" aria-label="Select a genre">
+            <option value="">Genre (any)</option>
+            <option>Action</option><option>Adventure</option><option>Comedy</option>
+            <option>Drama</option><option>Fantasy</option><option>Romance</option>
+            <option>Slice of Life</option><option>Thriller</option><option>Sci-Fi</option>
+          </select>
+          <select id="length" aria-label="Select a length">
+            <option value="">Length (any)</option>
+            <option value="short">Short (≤ 12 eps)</option>
+            <option value="standard">Standard (13–26 eps)</option>
+            <option value="long">Long (> 26 eps)</option>
+          </select>
+          <select id="year" aria-label="Release year">
+            <option value="">Year (any)</option>
+            <option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option>
+          </select>
+          <select id="mood" aria-label="Mood">
+            <option value="">Mood (any)</option>
+            <option value="cozy">Cozy</option>
+            <option value="hype">High-energy</option>
+            <option value="feels">Emotional</option>
+            <option value="dark">Dark</option>
+          </select>
+          <button class="btn" id="byFiltersBtn">Show Results</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="container" aria-labelledby="results-title">
+    <div class="section-title">
+      <h2 id="results-title">Results</h2>
+      <div id="result-count" class="meta"></div>
+    </div>
+    <div id="results" class="grid">
+      <div class="empty" id="empty-state">
+        <div style="display:grid; place-items:center; gap:10px">
+          <div class="loader" aria-hidden="true" style="display:none" id="loader"></div>
+          <div id="empty-text">Try entering a title you like or adjust the filters to see recommendations.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="container" id="about">
+    <div class="brand" style="margin-bottom:8px">
+      <span class="brand-badge" aria-hidden="true">AF</span>
+      <strong>AnimeFinds</strong>
+    </div>
+    <p style="margin:0; color:var(--muted)">Focused on one thing: helping you discover what to watch next.</p>
+  </footer>
 
   <script>
-    // Tabs behavior
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- Elements ---
     const tabTitle = document.getElementById('tab-title');
     const tabFilters = document.getElementById('tab-filters');
     const panelTitle = document.getElementById('panel-title');
     const panelFilters = document.getElementById('panel-filters');
 
-    function activate(tab){
-      const isTitle = tab === 'title';
-      tabTitle.classList.toggle('active', isTitle);
-      tabTitle.setAttribute('aria-selected', isTitle);
-      panelTitle.hidden = !isTitle;
-      tabFilters.classList.toggle('active', !isTitle);
-      tabFilters.setAttribute('aria-selected', !isTitle);
-      panelFilters.hidden = isTitle;
+    // Guard for tabs
+    if (tabTitle && tabFilters && panelTitle && panelFilters) {
+      function activate(tab){
+        const isTitle = tab === 'title';
+        tabTitle.classList.toggle('active', isTitle);
+        tabTitle.setAttribute('aria-selected', isTitle);
+        panelTitle.hidden = !isTitle;
+        tabFilters.classList.toggle('active', !isTitle);
+        tabFilters.setAttribute('aria-selected', !isTitle);
+        panelFilters.hidden = isTitle;
+      }
+      tabTitle.addEventListener('click', () => activate('title'));
+      tabFilters.addEventListener('click', () => activate('filters'));
+    } else {
+      console.warn('Tabs UI not found — check IDs: tab-title, tab-filters, panel-title, panel-filters.');
     }
-    tabTitle.addEventListener('click', () => activate('title'));
-    tabFilters.addEventListener('click', () => activate('filters'));
 
-    // Elements
-    const likeInput = document.getElementById('like-input');
-    const titleHints = document.getElementById('title-hints');
-    const byTitleBtn = document.getElementById('byTitleBtn');
-    const byFiltersBtn = document.getElementById('byFiltersBtn');
-    const results = document.getElementById('results');
-    const emptyState = document.getElementById('empty-state');
-    const emptyText = document.getElementById('empty-text');
-    const loader = document.getElementById('loader');
+    const likeInput   = document.getElementById('like-input');
+    const titleHints  = document.getElementById('title-hints');
+    const byTitleBtn  = document.getElementById('byTitleBtn');
+    const byFiltersBtn= document.getElementById('byFiltersBtn');
+    const results     = document.getElementById('results');
+    const emptyState  = document.getElementById('empty-state');
+    const emptyText   = document.getElementById('empty-text');
+    const loader      = document.getElementById('loader');
     const resultCount = document.getElementById('result-count');
 
     // -------- AniList GraphQL helpers --------
@@ -55,9 +246,7 @@
       return json.data;
     }
 
-    function pickTitle(t){
-      return t?.english || t?.romaji || t?.native || 'Untitled';
-    }
+    function pickTitle(t){ return t?.english || t?.romaji || t?.native || 'Untitled'; }
 
     function toCard(media){
       return {
@@ -179,7 +368,8 @@
     async function fetchByFilters(filters){
       const { epMin, epMax } = mapLengthToBounds(filters.length);
       const tags = filters.mood ? MOOD_TAGS[filters.mood] : null;
-      const yearInt = /^\d{4}$/.test(filters.year) ? parseInt(filters.year,10) : null;
+      const y = parseInt(filters.year, 10);
+      const yearInt = Number.isInteger(y) && String(y).length === 4 ? y : null;
       const data = await gql(QUERY_FILTERS, {
         genre: filters.genre || null,
         year: yearInt,
@@ -192,9 +382,9 @@
     }
 
     // -------- Wire up actions --------
-    byTitleBtn.addEventListener('click', async () => {
-      const like = (likeInput.value || '').trim();
-      if(!like){ likeInput.focus(); return; }
+    byTitleBtn?.addEventListener('click', async () => {
+      const like = (likeInput?.value || '').trim();
+      if(!like){ likeInput?.focus(); return; }
       try{
         startLoading('Finding similar titles…');
         const items = await fetchSimilarByTitle(like);
@@ -206,12 +396,12 @@
       }
     });
 
-    byFiltersBtn.addEventListener('click', async () => {
+    byFiltersBtn?.addEventListener('click', async () => {
       const filters = {
-        genre: document.getElementById('genre').value,
-        length: document.getElementById('length').value,
-        year: document.getElementById('year').value,
-        mood: document.getElementById('mood').value,
+        genre: document.getElementById('genre')?.value,
+        length: document.getElementById('length')?.value,
+        year: document.getElementById('year')?.value,
+        mood: document.getElementById('mood')?.value,
       };
       try{
         startLoading('Applying filters…');
@@ -236,7 +426,7 @@
     `;
 
     let hintTimer;
-    likeInput.addEventListener('input', () => {
+    likeInput?.addEventListener('input', () => {
       clearTimeout(hintTimer);
       const q = likeInput.value.trim();
       if(!q){ titleHints.textContent=''; return; }
@@ -248,6 +438,7 @@
         }catch{ /* ignore */ }
       }, 250);
     });
+  });
   </script>
 </body>
 </html>
